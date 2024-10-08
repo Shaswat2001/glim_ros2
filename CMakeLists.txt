@@ -15,7 +15,7 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 find_package(glim REQUIRED)
-
+find_package(PCL REQUIRED COMPONENTS common io)
 if(BUILD_WITH_CUDA)
   add_definitions(-DBUILD_GTSAM_POINTS_GPU)
 endif()
@@ -48,9 +48,9 @@ ament_auto_add_executable(glim_rosnode
   src/glim_rosnode.cpp
 )
 target_link_libraries(glim_rosnode
-  glim_ros
+  glim_ros ${PCL_LIBRARIES}
 )
-
+include_directories(${PCL_INCLUDE_DIRS})
 ### glim_rosbag ###
 ament_auto_add_executable(glim_rosbag
   src/glim_rosbag.cpp

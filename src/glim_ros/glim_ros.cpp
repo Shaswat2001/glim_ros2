@@ -35,6 +35,10 @@
 #include <glim/mapping/async_global_mapping.hpp>
 #include <glim_ros/ros_compatibility.hpp>
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <cstdlib>  // Required for system()
+
 namespace glim {
 
 GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options) {
@@ -183,6 +187,30 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
 }
 
 GlimROS::~GlimROS() {
+
+  std::vector<Eigen::Vector4d> points = global_mapping->export_points();
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+  // Reserve space for points
+  cloud->width = points.size();
+  cloud->height = 1;  // Unorganized point cloud
+  cloud->is_dense = false;  // If your data is dense, set this to true
+  cloud->points.resize(cloud->width * cloud->height);
+
+  // Convert the Eigen points to PCL format
+  for (size_t i = 0; i < points.size(); ++i) {
+        cloud->points[i].x = points[i].x();  // X-coordinate
+        cloud->points[i].y = points[i].y();  // Y-coordinate
+        cloud->points[i].z = points[i].z();  // Z-coordinate
+      // You can ignore the 4th component of Eigen::Vector4d (usually a homogeneous coordinate)
+  }
+
+  // Save the point cloud to a PCD file
+  pcl::io::savePCDFileASCII("pointcloud.pcd", *cloud);
+
+  std::string pdal_command = "pdal translate pointcloud.pcd output.las";
+  int result = system(pdal_command.c_str());  // Execute the command
+
   spdlog::debug("quit");
   extension_modules.clear();
 }
